@@ -1,0 +1,11 @@
+pdfplumber
+PyMuPDF
+Pillow
+pytesseract
+spacy
+rapidfuzz
+face-recognition
+opencv-python
+fpdf2
+pandas
+numpy

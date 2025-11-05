@@ -1,0 +1,14 @@
+# Ignore Python virtual environment
+venv/
+.env
+__pycache__/
+*.pyc
+
+# Ignore Streamlit & cache files
+.streamlit/
+.history/
+*.log
+
+# Ignore system files
+.DS_Store
+Thumbs.db

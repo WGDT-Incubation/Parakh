@@ -1,0 +1,16 @@
+{
+  "applicant_name": "and girl",
+  "results": [
+    {
+      "file": "input_docs/11.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "and girl",
+      "score": 100.0,
+      "status": "PASS"
+    }
+  ]
+}

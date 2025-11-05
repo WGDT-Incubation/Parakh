@@ -1,0 +1,14 @@
+{
+  "applicant_name": "Jawahar Bhawan",
+  "results": [
+    {
+      "file": "input_docs/11.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Jawahar Bhawan",
+      "text_len": 10023,
+      "images": [
+        

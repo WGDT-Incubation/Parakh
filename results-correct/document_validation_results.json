@@ -1,0 +1,49 @@
+{
+  "applicant_name": "Priyanshi Devi ..",
+  "results": [
+    {
+      "file": "input_docs/11.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Priyanshi Devi ..",
+      "score": 100.0,
+      "status": "PASS"
+    },
+    {
+      "file": "input_docs/12.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Priyanshi Devi ..",
+      "score": 100.0,
+      "status": "PASS"
+    },
+    {
+      "file": "input_docs/23.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Krashna",
+      "score": 33.33333333333333,
+      "status": "FAIL"
+    },
+    {
+      "file": "input_docs/24.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Kajal .",
+      "score": 25.0,
+      "status": "FAIL"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "applicant_name": "Ms. Priyanshi Devi ",
+  "results": [
+    {
+      "file": "input_docs/11.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Ms. Priyanshi Devi ",
+      "face_result": {
+        "faces_found": 1,
+        "avg_similarity": null,
+        "status": "NO_FACE"
+      },
+      "name_score": 100.0,
+      "name_status": "PASS"
+    },
+    {
+      "file": "input_docs/12.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Priyanshi Devi ",
+      "face_result": {
+        "faces_found": 0,
+        "avg_similarity": null,
+        "status": "NO_FACE"
+      },
+      "name_score": 100.0,
+      "name_status": "PASS"
+    },
+    {
+      "file": "input_docs/23.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Krashna",
+      "face_result": {
+        "faces_found": 3,
+        "avg_similarity": 0.869,
+        "status": "PASS"
+      },
+      "name_score": 32.0,
+      "name_status": "FAIL"
+    },
+    {
+      "file": "input_docs/24.pdf",
+      "types": {
+        "form": true,
+        "marksheet": true,
+        "receipt": true
+      },
+      "detected_name": "Kajal ",
+      "face_result": {
+        "faces_found": 1,
+        "avg_similarity": null,
+        "status": "NO_FACE"
+      },
+      "name_score": 8.695652173913047,
+      "name_status": "FAIL"
+    }
+  ]
+}
