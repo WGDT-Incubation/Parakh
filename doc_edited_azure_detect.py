@@ -12,8 +12,8 @@ from azure.core.credentials import AzureKeyCredential
 
 # ----------------- CONFIG -----------------
 
-AZURE_FORM_RECOGNIZER_ENDPOINT = "https://<YOUR_RESOURCE_NAME>.cognitiveservices.azure.com/"
-AZURE_FORM_RECOGNIZER_KEY = "<YOUR_KEY>"
+AZURE_FORM_RECOGNIZER_ENDPOINT = "https://pm-doc-cagup-edit.cognitiveservices.azure.com/" #PM15 
+AZURE_FORM_RECOGNIZER_KEY = "" #PM15 
 
 client = DocumentAnalysisClient(
     endpoint=AZURE_FORM_RECOGNIZER_ENDPOINT,
@@ -21,8 +21,8 @@ client = DocumentAnalysisClient(
 )
 
 st.set_page_config(page_title="Azure DOCINT + Forensics: Forgery Detector", layout="wide")
-st.title("Azure Document Intelligence + Forensics — Forgery Detection POC")
-st.write("Upload a document (image or PDF). System uses Azure Document Intelligence (text/layout/styles) + ELA/image forensics to detect edits.")
+st.title("Parakh Image Originality & Forgery Detection ")
+st.write("Upload a document (image or PDF).")
 
 # ---------- Utilities ----------
 def convert_pdf_to_image(uploaded_pdf):

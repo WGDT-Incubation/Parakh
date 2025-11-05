@@ -1,143 +1,177 @@
 import streamlit as st
-from pdf2image import convert_from_path
-from deepface import DeepFace
-from PIL import Image
-import numpy as np
-import cv2
-import imagehash
-import faiss
 import os
-import pytesseract
+from pdf2image import convert_from_path
+from azure.cognitiveservices.vision.face import FaceClient
+from msrest.authentication import CognitiveServicesCredentials
+from PIL import Image
 from io import BytesIO
+import tempfile
+import uuid
 
-# --- Helper Functions ---
-
-def pdf_to_images(pdf_bytes):
-    pages = convert_from_path(pdf_bytes)
-    return pages
-
-def detect_and_crop_faces(pil_image):
-    img = np.array(pil_image.convert('RGB'))[:, :, ::-1]
-    detections = DeepFace.extract_faces(img_path=img, detector_backend='retinaface', enforce_detection=False)
-    crops = []
-    for d in detections:
-        face_img = d['face']
-        crops.append(face_img)
-    return crops
-
-def face_embedding(face_rgb):
-    rep = DeepFace.represent(face_rgb, model_name='ArcFace', enforce_detection=False)
-    if isinstance(rep, list):
-        rep = rep[0]['embedding']
-    return np.array(rep, dtype='float32')
-
-def get_phash(face_rgb):
-    pil = Image.fromarray(np.uint8(face_rgb))
-    return imagehash.phash(pil)
-
-def extract_name(pil_image):
-    # Simple OCR-based name extraction (optional)
-    text = pytesseract.image_to_string(pil_image)
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
-    if lines:
-        return lines[0]  # assume first line has name
-    return "Unknown"
-
-def process_uploaded_files(files):
-    embeddings, meta = [], []
-    for uploaded_file in files:
-        filename = uploaded_file.name
-        if filename.lower().endswith('.pdf'):
-            # Convert PDF -> Images
-            with BytesIO(uploaded_file.read()) as f:
-                pages = convert_from_path(f)
-            images = pages
-        else:
-            image = Image.open(uploaded_file)
-            images = [image]
-
-        for p_idx, pil_img in enumerate(images):
-            faces = detect_and_crop_faces(pil_img)
-            for f_idx, face_rgb in enumerate(faces):
-                emb = face_embedding(face_rgb)
-                ph = get_phash(face_rgb)
-                name = extract_name(pil_img)
-                embeddings.append(emb)
-                meta.append({
-                    "filename": filename,
-                    "page": p_idx,
-                    "face_idx": f_idx,
-                    "phash": str(ph),
-                    "name": name,
-                    "face_img": Image.fromarray(np.uint8(face_rgb))
-                })
-    return np.vstack(embeddings), meta
-
-def find_duplicates(emb_matrix, meta, threshold=0.45, top_k=5):
-    d = emb_matrix.shape[1]
-    index = faiss.IndexFlatL2(d)
-    index.add(emb_matrix)
-    D, I = index.search(emb_matrix, top_k)
-    results = []
-    for i in range(len(meta)):
-        for j in range(1, top_k):
-            if I[i, j] == -1: continue
-            dist = D[i, j]
-            if dist < (threshold ** 2):
-                if meta[i]["filename"] != meta[I[i, j]]["filename"]:
-                    results.append((meta[i], meta[I[i, j]], dist))
-    return results
+# -------------------------
+# CONFIGURATION
+# -------------------------
+AZURE_FACE_ENDPOINT = "https://pm-docface-cagup.cognitiveservices.azure.com/" #PM15 
+AZURE_FACE_KEY = "" #PM15 
 
 
-# Add at top of file (after imports but before st.title)
-st.cache_resource
-def preload_models():
-    DeepFace.build_model("ArcFace")
-    DeepFace.build_model("RetinaFace")
+face_client = FaceClient(AZURE_FACE_ENDPOINT, CognitiveServicesCredentials(AZURE_FACE_KEY))
 
-preload_models()
-st.success("Models preloaded successfully ✅")
+# -------------------------
+# HELPER FUNCTIONS
+# -------------------------
+
+def convert_pdf_to_images(pdf_path):
+    """Convert PDF pages to list of PIL Images"""
+    return convert_from_path(pdf_path, dpi=200)
+
+def detect_faces_azure(image_bytes):
+    """Detect faces safely with validation"""
+    try:
+        if not image_bytes or len(image_bytes) < 5000:
+            raise ValueError("Image too small or empty")
+
+        image_stream = BytesIO(image_bytes)
+        detected_faces = face_client.face.detect_with_stream(
+            image=image_stream,
+            detection_model="detection_03",
+            recognition_model="recognition_04",
+            return_face_id=True,
+            return_face_rectangle=True
+        )
+        return detected_faces
+
+    except Exception as e:
+        st.warning(f"Error detecting face: {e}")
+        return []
 
 
-# --- Streamlit UI ---
+def find_similar_faces(face_id, face_id_list):
+    """Find similar faces from a list of faceIds"""
+    try:
+        similar_faces = face_client.face.find_similar(face_id=face_id, face_ids=face_id_list)
+        return similar_faces
+    except Exception as e:
+        st.warning(f"Error in find_similar: {e}")
+        return []
 
-st.set_page_config(page_title="Duplicate Photo Detector", layout="wide")
+def image_bytes_from_pil(img):
+    """Convert PIL image to clean RGB JPEG bytes for Azure Face API"""
+    if img.mode != "RGB":
+        img = img.convert("RGB")  # ✅ ensure RGB
+    img_byte_arr = BytesIO()
+    img.save(img_byte_arr, format="JPEG", quality=90)
+    img_byte_arr.seek(0)
+    return img_byte_arr.getvalue()
 
-st.title("🕵️‍♂️ Duplicate Passport Photo Detection App")
+
+def crop_face(pil_image, rect):
+    """Crop face using rectangle coords returned by Azure"""
+    left = rect.left
+    top = rect.top
+    width = rect.width
+    height = rect.height
+    return pil_image.crop((left, top, left + width, top + height))
+
+# -------------------------
+# STREAMLIT UI
+# -------------------------
+st.set_page_config(page_title="Azure Face Duplicate Photo Detector", layout="wide")
+st.title("Parakh – Duplicate Passport Photo Detector")
+
 st.markdown("""
-Upload multiple PDF or image files (forms, documents).  
-The app will automatically detect passport-size photos and find duplicates across files, even if names differ.
+This app scans all PDFs and image files in a chosen directory,
+detects faces using **Azure Face API**, and finds duplicate passport-size photos
+across different documents.
 """)
 
-uploaded_files = st.file_uploader("Upload multiple files", type=["pdf", "jpg", "jpeg", "png"], accept_multiple_files=True)
+# Directory input
+dir_path = st.text_input("📂 Enter directory path containing PDF/Image files:")
 
-if uploaded_files:
-    st.info(f"Processing {len(uploaded_files)} files... please wait ⏳")
+if dir_path and os.path.isdir(dir_path):
 
-    with st.spinner("Detecting faces and generating embeddings..."):
-        emb_matrix, meta = process_uploaded_files(uploaded_files)
+    st.info(f"Reading files from: `{dir_path}`")
 
-    st.success("✅ Face extraction and embedding complete.")
+    # Collect all PDF and image files
+    files = [os.path.join(dir_path, f) for f in os.listdir(dir_path)
+             if f.lower().endswith(('.pdf', '.jpg', '.jpeg', '.png'))]
 
-    st.subheader("🔍 Finding duplicate photos...")
-    duplicates = find_duplicates(emb_matrix, meta, threshold=0.45)
-
-    if len(duplicates) == 0:
-        st.info("No duplicate faces found.")
+    if len(files) == 0:
+        st.warning("No PDF or image files found in the given directory.")
     else:
-        st.success(f"Found {len(duplicates)} potential duplicate matches.")
-        for idx, (m1, m2, dist) in enumerate(duplicates):
-            col1, col2, col3 = st.columns([1,1,1.5])
-            with col1:
-                st.image(m1["face_img"], caption=f"{m1['filename']}\nName: {m1['name']}")
-            with col2:
-                st.image(m2["face_img"], caption=f"{m2['filename']}\nName: {m2['name']}")
-            with col3:
-                st.write(f"**Match Score:** {1 - dist:.3f}")
-                if m1['name'] != m2['name']:
-                    st.error("⚠️ Different Names")
-                else:
-                    st.success("Same Name (Possible Same Person)")
+        st.write(f"Found {len(files)} documents.")
 
+        start_btn = st.button("🚀 Start Analysis")
+
+        if start_btn:
+            with st.spinner("Processing documents with Azure Face API..."):
+
+                face_records = []
+                # 1️⃣ Process each file
+                for file_path in files:
+                    try:
+                        if file_path.lower().endswith('.pdf'):
+                            pages = convert_pdf_to_images(file_path)
+                        else:
+                            pages = [Image.open(file_path)]
+
+                        for p_idx, img in enumerate(pages):
+                            img_bytes = image_bytes_from_pil(img)
+                            
+                            detected = detect_faces_azure(img_bytes)
+
+                            for f_idx, face in enumerate(detected):
+                                face_crop = crop_face(img, face.face_rectangle)
+                                face_id = face.face_id
+                                temp_path = os.path.join(tempfile.gettempdir(), f"{uuid.uuid4()}.jpg")
+                                face_crop.save(temp_path)
+
+                                face_records.append({
+                                    "file": os.path.basename(file_path),
+                                    "page": p_idx + 1,
+                                    "face_id": face_id,
+                                    "crop_path": temp_path
+                                })
+                    except Exception as e:
+                        st.error(f"Error processing {file_path}: {e}")
+
+                st.success(f"Detected {len(face_records)} total faces across all documents.")
+
+                # 2️⃣ Compare all faces pairwise
+                results = []
+                all_face_ids = [r["face_id"] for r in face_records]
+
+                for i, record in enumerate(face_records):
+                    others = [fid for j, fid in enumerate(all_face_ids) if j != i]
+                    matches = find_similar_faces(record["face_id"], others)
+                    for m in matches:
+                        if m.confidence >= 0.75:
+                            match_record = next((r for r in face_records if r["face_id"] == m.face_id), None)
+                            if match_record and record["file"] != match_record["file"]:
+                                results.append({
+                                    "File A": record["file"],
+                                    "Page A": record["page"],
+                                    "File B": match_record["file"],
+                                    "Page B": match_record["page"],
+                                    "Confidence": round(m.confidence, 3),
+                                    "FaceA": record["crop_path"],
+                                    "FaceB": match_record["crop_path"]
+                                })
+
+                # 3️⃣ Display results
+                if len(results) == 0:
+                    st.info("✅ No duplicate passport photos found across documents.")
+                else:
+                    st.success(f"Found {len(results)} potential duplicate photo pairs:")
+                    for idx, res in enumerate(results, 1):
+                        st.markdown(f"### Match #{idx}")
+                        col1, col2, col3 = st.columns([1,1,1])
+                        with col1:
+                            st.image(res["FaceA"], caption=f"{res['File A']} (Page {res['Page A']})")
+                        with col2:
+                            st.image(res["FaceB"], caption=f"{res['File B']} (Page {res['Page B']})")
+                        with col3:
+                            st.write(f"**Confidence:** {res['Confidence']}")
+                            st.write("Potential duplicate detected 🔁")
 else:
-    st.warning("Please upload PDF or image files to start analysis.")
+    st.warning("Please enter a valid directory path to start.")

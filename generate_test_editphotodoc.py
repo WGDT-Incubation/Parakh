@@ -1,20 +1,31 @@
-from PIL import Image, ImageDraw, ImageFont
+# generate_more_tests.py
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-# Create Original Document
-img = Image.new("RGB", (800, 500), color=(255, 255, 255))
-draw = ImageDraw.Draw(img)
-draw.text((100, 100), "GOVT. SCHEME CLAIM RECEIPT", fill=(0, 0, 0))
-draw.text((100, 200), "Name: Rohan Sharma", fill=(0, 0, 0))
-draw.text((100, 250), "Amount: Rs. 1500", fill=(0, 0, 0))
-draw.text((100, 300), "Date: 12/03/2023", fill=(0, 0, 0))
-draw.text((100, 400), "Signature: _______________", fill=(0, 0, 0))
+img = Image.new("RGB", (800,500), "white")
+d = ImageDraw.Draw(img)
+d.text((60,80),"GOVT SCHEME RECEIPT",fill="black")
+d.text((60,160),"Name: Rohan Sharma",fill="black")
+d.text((60,220),"Amount: Rs. 1500",fill="black")
+d.text((60,280),"Date: 12/03/2023",fill="black")
+d.text((60,360),"Signature: _________________",fill="black")
 img.save("original_doc.jpg")
-print("✅ Original document saved as 'original_doc.jpg'")
 
-# Create Forged Document (simulate an edited amount)
-img_edit = img.copy()
-draw2 = ImageDraw.Draw(img_edit)
-draw2.rectangle((95, 240, 350, 270), fill=(255, 255, 255))  # cover old amount
-draw2.text((100, 250), "Amount: Rs. 4500", fill=(0, 0, 0))  # edited value
-img_edit.save("forged_doc.jpg")
-print("🚨 Forged document saved as 'forged_doc.jpg'")
+# forged 1: change amount
+f1 = img.copy()
+d1 = ImageDraw.Draw(f1)
+d1.rectangle((55,210,400,240), fill="white")   # cover amount
+d1.text((60,220),"Amount: Rs. 4500", fill="black")
+f1.save("forged_amount.jpg")
+
+# forged 2: change name + small blur
+f2 = img.copy()
+d2 = ImageDraw.Draw(f2)
+d2.rectangle((60,150,400,180), fill="white")
+d2.text((60,160),"Name: Mohit Kumar", fill="black")
+f2 = f2.filter(ImageFilter.GaussianBlur(radius=0.6))
+f2.save("forged_name_blur.jpg")
+
+# forged 3: edited and re-saved lower quality
+f3 = f1.copy()
+f3.save("forged_amount_lowq.jpg", quality=60)
+print("Saved 4 files: original_doc.jpg, forged_amount.jpg, forged_name_blur.jpg, forged_amount_lowq.jpg")
