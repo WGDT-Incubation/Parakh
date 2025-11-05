@@ -8,6 +8,6 @@ AZURE_FORM_KEY = os.getenv("AZURE_FORM_KEY")
 
 client = DocumentAnalysisClient(
     endpoint=AZURE_FORM_ENDPOINT ,
-    credential=AzureKeyCredential("109bc8d3-f621-46ae-b6d9-967d36fb59d8")
+    credential=AzureKeyCredential("") #PM15
 )
 print("✅ Connected:", client is not None)
