@@ -2,13 +2,17 @@ import streamlit as st
 import fitz
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageChops, ImageEnhance
 import json
 from io import BytesIO
 import pandas as pd
 import base64
 import subprocess
 from pathlib import Path
+
+
+from pdf2image import convert_from_path
+import tempfile
 
 # ----------------------------
 # PAGE CONFIG
@@ -70,9 +74,6 @@ st.markdown("""
 st.markdown("""
 <div class="navbar">
     <a href="#">HOME</a>
-    <a href="#">ABOUT</a>
-    <a href="#">FEATURES</a>
-    <a href="#">TECHNOLOGY</a>
     <a href="#">CONTACT / SUPPORT</a>
     <a href="#" class="login-btn">SECURE LOGIN</a>
 </div>
@@ -128,8 +129,13 @@ st.markdown("""
 # ----------------------------
 # SIDEBAR NAVIGATION
 # ----------------------------
-st.sidebar.title("📂 Navigation")
-page = st.sidebar.radio("Select a view", ["Forgery Detection", "Document Validation"])
+st.sidebar.title("📂 Configuration")
+page = st.sidebar.radio(
+    "Select a view",
+    ["Forgery Detection", "Document Validation", "Doc Authenticity", "Duplicate Photo Finding","Blur Detection"]
+)
+
+
 st.sidebar.markdown("---")
 st.sidebar.caption("AI Document Integrity Demo")
 
@@ -197,6 +203,39 @@ def detect_white_marker(cv_img, sat_thresh=30, val_thresh=200, min_area=150):
             suspicious.append((x, y, w, h, area))
     return out, suspicious
 
+def detect_blur(cv_img, threshold=100):
+    """Detect if an image is blurred using Laplacian variance."""
+    gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+    variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+    is_blurred = variance < threshold
+    return variance, is_blurred
+
+
+def highlight_blur_regions(cv_img, window_size=15, threshold=50):
+    """
+    Highlight local blurred regions using sliding window variance.
+    Returns image with red boxes drawn around blurred regions.
+    """
+    gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+    h, w = gray.shape
+    blurred_map = np.zeros_like(gray, dtype=np.float32)
+
+    # compute variance in local windows
+    for y in range(0, h - window_size, window_size):
+        for x in range(0, w - window_size, window_size):
+            patch = gray[y:y + window_size, x:x + window_size]
+            variance = cv2.Laplacian(patch, cv2.CV_64F).var()
+            blurred_map[y:y + window_size, x:x + window_size] = variance
+
+    out = cv_img.copy()
+    for y in range(0, h - window_size, window_size):
+        for x in range(0, w - window_size, window_size):
+            if blurred_map[y:y + window_size, x:x + window_size].mean() < threshold:
+                cv2.rectangle(out, (x, y), (x + window_size, y + window_size), (0, 0, 255), 1)
+
+    overall_score = np.mean(blurred_map)
+    return out, overall_score
+
 
 def extract_images_from_pdf(pdf_bytes):
     images = []
@@ -208,6 +247,57 @@ def extract_images_from_pdf(pdf_bytes):
                 pil_img = Image.open(BytesIO(image_bytes)).convert("RGB")
                 images.append(pil_img)
     return images
+# ---------- Image Edit Utility Functions ----------
+
+def convert_pdf_to_image(uploaded_pdf):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(uploaded_pdf.read())
+        tmp.flush()
+        images = convert_from_path(tmp.name)
+    return images[0]
+
+def perform_ela(image, quality=90):
+    """Perform Error Level Analysis"""
+    image = image.convert("RGB")
+    temp_filename = "temp_ela.jpg"
+    image.save(temp_filename, 'JPEG', quality=quality)
+    ela_image = Image.open(temp_filename)
+    diff = ImageChops.difference(image, ela_image)
+    extrema = diff.getextrema()
+    max_diff = max([ex[1] for ex in extrema]) if extrema else 0
+    scale = 255.0 / max_diff if max_diff != 0 else 1
+    ela_image = ImageEnhance.Brightness(diff).enhance(scale)
+    return ela_image
+
+def generate_heatmap_overlay(original, ela_image, threshold=120, alpha=0.45):
+    """Create heatmap overlay for edited regions"""
+    ela_gray = cv2.cvtColor(np.array(ela_image), cv2.COLOR_RGB2GRAY)
+    _, mask = cv2.threshold(ela_gray, threshold, 255, cv2.THRESH_BINARY)
+    mask = cv2.GaussianBlur(mask, (7, 7), 0)
+    heatmap = cv2.applyColorMap(mask, cv2.COLORMAP_JET)
+    heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
+    overlay = cv2.addWeighted(np.array(original), 1 - alpha, heatmap, alpha, 0)
+    suspicious_pixels = np.count_nonzero(mask > 50)
+    return Image.fromarray(overlay), suspicious_pixels
+
+def edge_noise_analysis(image):
+    """Calculate edge and noise consistency"""
+    gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+def clone_patch_inconsistency(image):
+    """Detect patch duplication (copy-paste regions)"""
+    gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    sift = cv2.SIFT_create()
+    keypoints, descriptors = sift.detectAndCompute(gray, None)
+    return len(keypoints)
+
+def preprocess_image(uploaded_file):
+    if uploaded_file.type == "application/pdf":
+        image = convert_pdf_to_image(uploaded_file)
+    else:
+        image = Image.open(uploaded_file).convert("RGB")
+    return image
 
 
 def style_status(val):
@@ -289,19 +379,30 @@ if page == "Forgery Detection":
 # ----------------------------
 # PAGE 2 - DOCUMENT VALIDATION
 # ----------------------------
+
 elif page == "Document Validation":
     st.markdown('<div class="upload-card">', unsafe_allow_html=True)
     st.title("🔎 CAG PARAKH - Document Validation")
-    st.write("""
-    Upload a folder containing PDFs and click **Run Validator** to check:
-    - Structural Integrity (layout, pages, duplications)
-    - Semantic Coherence (logical flow, contradictions)
-    - Authenticity Indicators (overwritten text, metadata issues)
-    """)
 
+    # ----------------------------
+    # SESSION STATE SETUP
+    # ----------------------------
+    if "validation_data" not in st.session_state:
+        st.session_state.validation_data = None
+    if "validation_df" not in st.session_state:
+        st.session_state.validation_df = None
+    if "input_dir" not in st.session_state:
+        st.session_state.input_dir = None
+
+    # ----------------------------
+    # INPUT FIELD + RUN BUTTON
+    # ----------------------------
     input_dir = st.text_input("📂 Enter directory path containing PDFs:", value="input_docs")
     run_button = st.button("▶️ Run Validator")
 
+    # ----------------------------
+    # RUN VALIDATOR AND STORE RESULTS
+    # ----------------------------
     if run_button:
         if not Path(input_dir).exists():
             st.error(f"Input directory not found: {input_dir}")
@@ -319,18 +420,198 @@ elif page == "Document Validation":
                         df["Status"] = df["status"].apply(style_status)
                         df.rename(columns={"detected_name": "Detected Name"}, inplace=True)
                         df = df[["File", "Detected Name", "Score", "Status"]]
-                        st.dataframe(df, use_container_width=True, hide_index=True)
-                        st.write(f"**Summary:** ✅ {(df['Status'].str.contains('PASS')).sum()} PASS | ❌ {(df['Status'].str.contains('FAIL')).sum()} FAIL (out of {len(df)})")
-                        st.markdown("---")
-                        st.subheader("📘 Document Preview")
-                        selected_file = st.selectbox("Select document to preview:", options=df["File"].tolist())
-                        if selected_file:
-                            pdf_path = Path(input_dir) / selected_file
-                            if pdf_path.exists():
-                                pages = render_pdf_pages(pdf_path)
-                                for i, p in enumerate(pages):
-                                    st.image(p, caption=f"Page {i+1}", use_container_width=True)
+
+                        # Save in session state
+                        st.session_state.validation_data = data
+                        st.session_state.validation_df = df
+                        st.session_state.input_dir = input_dir
+
+                        st.success("✅ Validation completed. You can now explore results below!")
+
+    # ----------------------------
+    # SHOW RESULTS IF ALREADY AVAILABLE
+    # ----------------------------
+    if st.session_state.validation_df is not None:
+        df = st.session_state.validation_df
+        input_dir = st.session_state.input_dir
+
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.write(f"**Summary:** ✅ {(df['Status'].str.contains('PASS')).sum()} PASS | ❌ {(df['Status'].str.contains('FAIL')).sum()} FAIL (out of {len(df)})")
+        st.markdown("---")
+
+        # ----------------------------
+        # DOCUMENT PREVIEW SECTION
+        # ----------------------------
+        st.subheader("📘 Document Preview")
+        selected_file = st.selectbox("Select document to preview:", options=df["File"].tolist(), key="selected_preview_file")
+
+        if selected_file:
+            pdf_path = Path(input_dir) / selected_file
+            if pdf_path.exists():
+                pages = render_pdf_pages(pdf_path)
+                for i, p in enumerate(pages):
+                    st.image(p, caption=f"Page {i+1}", use_container_width=True)
+            else:
+                st.warning("⚠️ PDF not found in specified directory.")
+
     st.markdown('</div>', unsafe_allow_html=True)
+
+elif page == "Doc Authenticity":
+    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+    st.title("CAG PARAKH - Find Document Authenticity")
+    st.write("""
+    Upload a PDF / Image to detect if document is edited using any tool.
+    """)
+    uploaded_file = st.file_uploader("📁 Upload Document Image or PDF", type=["jpg", "jpeg", "png", "pdf"])
+
+    if uploaded_file:
+        image = preprocess_image(uploaded_file)
+        st.image(image, caption="Uploaded Document", use_container_width=True)
+
+        st.subheader("📸 Found Edited Section")
+        ela_img = perform_ela(image, quality=90)
+        st.image(ela_img, caption="ELA Visualization (brighter = possible edits)", use_container_width=True)
+        ela_array = np.array(ela_img)
+        ela_mean = np.mean(ela_array)
+        st.write(f"ELA Mean Intensity: **{ela_mean:.2f}**")
+
+        st.subheader("🧩 Edge / Noise Consistency")
+        noise_score = edge_noise_analysis(image)
+        st.write(f"Noise Variance: **{noise_score:.2f}**")
+
+        st.subheader("🧬 Clone / Patch Consistency")
+        keypoint_count = clone_patch_inconsistency(image)
+        st.write(f"Keypoint Features Detected: **{keypoint_count}**")
+
+        st.subheader("🔥 Heatmap")
+        heatmap_img, suspicious_regions = generate_heatmap_overlay(image, ela_img, threshold=120, alpha=0.5)
+        st.image(heatmap_img, caption="Suspicious Regions Highlighted", use_container_width=True)
+
+        # ---------- Improved Confidence Scoring ----------
+        st.subheader("⚖️ Step 5: Final Confidence & Verdict")
+
+        # --- Enhanced ELA metric: focus on strong local brightness (top 5%) ---
+        ela_gray = cv2.cvtColor(np.array(ela_img), cv2.COLOR_RGB2GRAY)
+        ela_sorted = np.sort(ela_gray.flatten())
+
+        #top5_mean = np.mean(ela_sorted[int(len(ela_sorted) * 0.95):])  # top 5% brightest pixels
+        #localized_ela_score = min(100, top5_mean * 1.2)  # amplify localized difference
+        top1_mean = np.mean(ela_sorted[int(len(ela_sorted)*0.99):])   # top 1 % pixels
+        localized_ela_score = min(100, top1_mean * 2.5)               # give it more weight
+
+
+        # --- Noise / Edge / Clone Factors ---
+        noise_factor = 100 - min(100, (noise_score / 6))         # smoother = suspicious
+        #region_factor = min(70, suspicious_regions / 120)         # more bright region = suspicious
+        region_factor = min(100, suspicious_regions / 60)   # was /120
+
+        clone_factor = 100 - min(100, (keypoint_count / 15))      # low keypoints = suspicious texture
+
+        # --- Combine weights ---
+        confidence_score = np.clip(
+            (localized_ela_score * 0.45) +
+            (noise_factor * 0.25) +
+            (region_factor * 0.2) +
+            (clone_factor * 0.1),
+            0, 100
+        )
+
+        # --- Verdict Threshold ---
+        #verdict = "FORGED / EDITED" if confidence_score >= 40 else "GENUINE / UNTAMPERED"
+        verdict = "FORGED / EDITED" if confidence_score >= 45 else "GENUINE / UNTAMPERED"
+
+        # --- Display Result ---
+        st.progress(confidence_score / 100)
+        if verdict == "FORGED / EDITED":
+            st.error(f"🚨 Document appears **{verdict}**")
+            st.caption("Detected high ELA intensity in localized region → likely digitally added or modified content.")
+        else:
+            st.success(f"✅ Document appears **{verdict}**")
+            st.caption("No major localized editing or tampering detected.")
+
+
+        st.download_button(
+            "💾 Download Heatmap Image",
+            data=heatmap_img.tobytes(),
+            file_name="forgery_heatmap.png",
+            mime="image/png"
+        )
+elif page == "Duplicate Photo Finding": 
+    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+    st.title("📸 CAG PARAKH - Duplicate Photo Finding")
+    st.write("""
+    Upload a folder containing PDFs and click **Run Analysis** to detect if the same face photo is used
+    across multiple documents.
+    """)    
+# ----------------------------
+# PAGE 5 - BLUR DETECTION
+# ----------------------------
+elif page == "Blur Detection":
+    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+    st.title("🔍 CAG PARAKH - Blur & Image Quality Detection")
+    st.write("""
+    Upload an **image** or a **PDF document** to analyze its clarity.
+    This module detects if the content is too blurred or low-quality for auditing.
+    """)
+
+    blur_threshold = st.sidebar.slider("Blur Sensitivity Threshold", 30, 300, 100, 10)
+    window_size = st.sidebar.slider("Blur Region Window (px)", 10, 50, 15, 5)
+
+    uploaded_file = st.file_uploader("📁 Upload a document or image", type=["pdf", "jpg", "jpeg", "png"])
+
+    if uploaded_file:
+        file_type = uploaded_file.name.lower().split(".")[-1]
+
+        if file_type == "pdf":
+            pdf_bytes = uploaded_file.read()
+            images = extract_images_from_pdf(pdf_bytes)
+            if not images:
+                st.warning("No images found in PDF.")
+            else:
+                st.success(f"Extracted {len(images)} page image(s).")
+                for i, pil_img in enumerate(images):
+                    st.subheader(f"📄 Page {i+1}")
+                    cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
+                    # Detect blurred regions
+                    blur_marked, score = highlight_blur_regions(cv_img, window_size, blur_threshold)
+                    variance, is_blurred = detect_blur(cv_img, blur_threshold)
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.image(pil_img, caption=f"Original (Sharpness: {round(variance, 2)})", use_container_width=True)
+                    with col2:
+                        st.image(cv2.cvtColor(blur_marked, cv2.COLOR_BGR2RGB),
+                                 caption="Blurred Regions Highlighted", use_container_width=True)
+
+                    if is_blurred:
+                        st.error(f"🚫 Page appears **blurred** (sharpness={round(variance,2)}) — Please upload a clearer version.")
+                    else:
+                        st.success(f"✅ Page is **clear** and suitable for analysis. Sharpness={round(variance,2)}")
+                    st.markdown("---")
+
+        else:
+            pil_img = Image.open(uploaded_file).convert("RGB")
+            cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
+            # Detect blurred regions
+            blur_marked, score = highlight_blur_regions(cv_img, window_size, blur_threshold)
+            variance, is_blurred = detect_blur(cv_img, blur_threshold)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.image(pil_img, caption=f"Original (Sharpness: {round(variance,2)})", use_container_width=True)
+            with col2:
+                st.image(cv2.cvtColor(blur_marked, cv2.COLOR_BGR2RGB),
+                         caption="Blurred Regions Highlighted", use_container_width=True)
+
+            if is_blurred:
+                st.error(f"🚫 This image appears **blurred or low quality**. Sharpness={round(variance,2)} — Please re-upload a clearer version.")
+            else:
+                st.success(f"✅ Image is **clear** and readable. Sharpness={round(variance,2)}")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 # ----------------------------
 # FOOTER
