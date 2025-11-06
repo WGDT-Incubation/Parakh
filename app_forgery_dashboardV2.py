@@ -8,11 +8,18 @@ from io import BytesIO
 import pandas as pd
 import base64
 import subprocess
+
+
+import tempfile
+import os
+import faiss
+from tqdm import tqdm
+from insightface.app import FaceAnalysis
+from pdf2image import convert_from_path
 from pathlib import Path
 
 
-from pdf2image import convert_from_path
-import tempfile
+
 
 # ----------------------------
 # PAGE CONFIG
@@ -309,6 +316,51 @@ def style_status(val):
         return "⚠️ REVIEW"
     else:
         return val
+    
+    # --------------------------
+# Initialize InsightFace (ArcFace + RetinaFace)
+# --------------------------
+@st.cache_resource
+def load_face_model():
+    app = FaceAnalysis(name='buffalo_l')  # includes RetinaFace + ArcFace
+    app.prepare(ctx_id=0, det_size=(640, 640))
+    return app
+
+face_app = load_face_model()
+
+# --------------------------
+# Helper functions - Duplicate photos finding
+# --------------------------
+def convert_pdf_to_images(pdf_path):
+    try:
+        pages = convert_from_path(pdf_path, dpi=200)
+        valid_pages = [p for p in pages if p.size[0] > 100 and p.size[1] > 100]
+        return valid_pages
+    except Exception as e:
+        st.warning(f"PDF conversion failed for {pdf_path}: {e}")
+        return []
+
+def extract_faces_and_embeddings(img_pil, filename):
+    img = cv2.cvtColor(np.array(img_pil.convert("RGB")), cv2.COLOR_RGB2BGR)
+    faces = face_app.get(img)
+    results = []
+    for f in faces:
+        emb = f.normed_embedding
+        bbox = f.bbox.astype(int)
+        x1, y1, x2, y2 = bbox
+        crop = img[y1:y2, x1:x2]
+        if crop.size == 0:
+            continue
+        face_img = Image.fromarray(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB))
+        results.append({
+            "file": os.path.basename(filename),
+            "embedding": emb,
+            "face_img": face_img
+        })
+    return results
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
 # ----------------------------
@@ -539,10 +591,87 @@ elif page == "Doc Authenticity":
 elif page == "Duplicate Photo Finding": 
     st.markdown('<div class="upload-card">', unsafe_allow_html=True)
     st.title("📸 CAG PARAKH - Duplicate Photo Finding")
+
+
     st.write("""
-    Upload a folder containing PDFs and click **Run Analysis** to detect if the same face photo is used
-    across multiple documents.
-    """)    
+    Detect duplicate passport-size photos across uploaded PDFs or images.
+    """)
+
+    dir_path = st.text_input("📂 Enter directory path containing PDFs or image files:")
+
+    if dir_path and os.path.isdir(dir_path):
+
+        files = [os.path.join(dir_path, f) for f in os.listdir(dir_path)
+                if f.lower().endswith(('.pdf', '.jpg', '.jpeg', '.png'))]
+
+        if len(files) == 0:
+            st.warning("No PDF or image files found in this folder.")
+        else:
+            st.success(f"Found {len(files)} documents.")
+            start_btn = st.button("🚀 Start Duplicate Photo Detection")
+
+            if start_btn:
+                st.info("Detecting ... please wait.")
+                face_records = []
+                for file_path in tqdm(files):
+                    if file_path.lower().endswith('.pdf'):
+                        pages = convert_pdf_to_images(file_path)
+                    else:
+                        pages = [Image.open(file_path)]
+
+                    for p in pages:
+                        results = extract_faces_and_embeddings(p, file_path)
+                        face_records.extend(results)
+
+                st.success(f"Extracted {len(face_records)} total faces.")
+
+                # --------------------------
+                # Compare embeddings for duplicates
+                # --------------------------
+                if len(face_records) > 1:
+                    st.info("Comparing photos to find duplicates...")
+                    embeddings = np.array([r["embedding"] for r in face_records]).astype('float32')
+                    n = len(embeddings)
+                    index = faiss.IndexFlatIP(embeddings.shape[1])
+                    index.add(embeddings)
+
+                    # Normalize vectors for cosine similarity
+                    faiss.normalize_L2(embeddings)
+
+                    D, I = index.search(embeddings, k=5)
+                    threshold = 0.85  # Adjust for stricter or looser matching
+                    pairs = []
+                    seen = set()
+
+                    for i in range(n):
+                        for j in range(1, 5):
+                            if I[i, j] < 0:
+                                continue
+                            sim = D[i, j]
+                            if sim >= threshold and (i, I[i, j]) not in seen and (I[i, j], i) not in seen:
+                                seen.add((i, I[i, j]))
+                                pairs.append((i, I[i, j], sim))
+
+                    if len(pairs) == 0:
+                        st.info("✅ No duplicate photos found.")
+                    else:
+                        st.success(f"Found {len(pairs)} duplicate photo pairs:")
+                        for idx, (i1, i2, sim) in enumerate(pairs, 1):
+                            col1, col2, col3 = st.columns([1, 1, 1])
+                            with col1:
+                                st.image(face_records[i1]["face_img"], caption=f"{face_records[i1]['file']}")
+                            with col2:
+                                st.image(face_records[i2]["face_img"], caption=f"{face_records[i2]['file']}")
+                            with col3:
+                                st.write(f"**Similarity:** {sim:.3f}")
+                                if face_records[i1]['file'] != face_records[i2]['file']:
+                                    st.error("⚠️ Same Photo found in Different Documents also under shared folder.")
+                                else:
+                                    st.success("Same document face repetition.")
+                else:
+                    st.warning("Not enough faces detected to compare.")
+    else:
+        st.warning("Please enter a valid folder path to start.")    
 # ----------------------------
 # PAGE 5 - BLUR DETECTION
 # ----------------------------

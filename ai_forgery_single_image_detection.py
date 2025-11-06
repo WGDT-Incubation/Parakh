@@ -132,6 +132,69 @@ if uploaded_file:
         st.caption("No major localized editing or tampering detected.")
 
 
+    # Try following updated code as well when dont want aggressive result to avoid making large number of doc as forged
+    '''# ---------- Final Tuned Confidence Scoring ----------
+        st.subheader("⚖️ Step 5: Final Confidence & Verdict (Balanced)")
+
+        # Convert ELA image to grayscale
+        ela_gray = cv2.cvtColor(np.array(ela_img), cv2.COLOR_RGB2GRAY)
+
+        # 1️⃣ Core ELA statistics
+        mean_intensity = np.mean(ela_gray)
+        std_intensity = np.std(ela_gray)
+        max_intensity = np.max(ela_gray)
+
+        # 2️⃣ Localized brightness detection
+        bright_mask = ela_gray > (mean_intensity + 0.6 * (max_intensity - mean_intensity))
+        bright_ratio = np.sum(bright_mask) / bright_mask.size * 100  # % of bright pixels
+
+        # 3️⃣ Contrast-driven suspicion
+        contrast_score = std_intensity * 1.1
+
+        # 4️⃣ Combined ELA suspicion before damping
+        ela_score_raw = np.clip((bright_ratio * 1.6) + (contrast_score * 0.8), 0, 100)
+
+        # 5️⃣ Genuine dampening logic
+        # If bright spots are <1% of area → likely camera noise
+        if bright_ratio < 1.0:
+            ela_score = ela_score_raw * 0.4
+        # If ELA pattern is evenly spread (low std) → genuine lighting, not edit
+        elif std_intensity < 18:
+            ela_score = ela_score_raw * 0.6
+        else:
+            ela_score = ela_score_raw
+
+        # 6️⃣ Other forensic factors
+        noise_factor = 100 - min(100, (noise_score / 6))           # low noise = suspicious
+        region_factor = min(100, suspicious_regions / 80)          # larger edited area
+        clone_factor = 100 - min(100, (keypoint_count / 15))       # texture repetition
+
+        # 7️⃣ Weighted fusion
+        confidence_score = np.clip(
+            (ela_score * 0.55) + (noise_factor * 0.15) +
+            (region_factor * 0.25) + (clone_factor * 0.05),
+            0, 100
+        )
+
+        # 8️⃣ Adaptive verdict thresholds
+        if bright_ratio < 0.8 and std_intensity < 18:
+            verdict_threshold = 55   # more tolerant for genuine scans
+        else:
+            verdict_threshold = 40   # sensitive for clear edits
+
+        verdict = "FORGED / EDITED" if confidence_score >= verdict_threshold else "GENUINE / UNTAMPERED"
+
+        # 9️⃣ Display results
+        st.progress(confidence_score / 100)
+        if verdict == "FORGED / EDITED":
+            st.error(f"🚨 Document appears **{verdict}** — Confidence: {confidence_score:.1f}%")
+            st.caption("Localized bright ELA regions and abnormal contrast suggest digital alteration.")
+        else:
+            st.success(f"✅ Document appears **{verdict}** — Confidence: {confidence_score:.1f}%")
+            st.caption("ELA pattern uniform — no signs of tampering beyond normal scan compression.")
+'''
+
+
     st.download_button(
         "💾 Download Heatmap Image",
         data=heatmap_img.tobytes(),

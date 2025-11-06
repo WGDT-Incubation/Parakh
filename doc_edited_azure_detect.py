@@ -12,8 +12,8 @@ from azure.core.credentials import AzureKeyCredential
 
 # ----------------- CONFIG -----------------
 
-AZURE_FORM_RECOGNIZER_ENDPOINT = "https://pm-doc-cagup-edit.cognitiveservices.azure.com/" #PM15 
-AZURE_FORM_RECOGNIZER_KEY = "" #PM15 
+AZURE_FORM_RECOGNIZER_ENDPOINT = "https://pm-doc-cagup-edit.cognitiveservices.azure.com/"
+AZURE_FORM_RECOGNIZER_KEY = ""
 
 client = DocumentAnalysisClient(
     endpoint=AZURE_FORM_RECOGNIZER_ENDPOINT,
