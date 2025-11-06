@@ -1,11 +1,34 @@
+# --- Core Image, PDF & OCR Processing ---
 pdfplumber
 PyMuPDF
 Pillow
 pytesseract
-spacy
-rapidfuzz
-face-recognition
 opencv-python
-fpdf2
-pandas
+face-recognition
 numpy
+pandas
+fpdf2
+rapidfuzz
+
+# --- NLP / Text Similarity / Processing ---
+spacy
+scikit-learn
+sentence-transformers
+
+# --- Web / App Interface ---
+streamlit
+streamlit-option-menu
+
+# --- Azure Cognitive Services (for Document / Face / Vision AI) ---
+azure-ai-formrecognizer
+azure-cognitiveservices-vision-face
+azure-core
+
+# --- Utility / File Handling ---
+python-magic
+tqdm
+requests
+
+# --- For ML / Deep Learning (Optional but useful for enhancement) ---
+torch
+transformers
