@@ -12,3 +12,9 @@ __pycache__/
 # Ignore system files
 .DS_Store
 Thumbs.db
+
+# Ignore specific files
+docsameface.py
+temp_ela.jpg
+testazurekey.py
+docsameface.py
