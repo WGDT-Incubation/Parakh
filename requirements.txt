@@ -12,7 +12,12 @@ pdf2image
 pathlib
 tqdm
 
-# --- Optional: Face recognition (comment out if Azure handles faces) ---
+# --- Face Detection & Analysis (InsightFace) ---
+insightface>=0.7.3
+onnxruntime>=1.16.0
+# If running locally (not cloud), you can replace the above opencv-python-headless with opencv-python
+
+# --- Optional: Traditional Face recognition (comment out if not needed) ---
 # face-recognition     # requires dlib compilation; skip for Streamlit Cloud
 
 # --- NLP / Text Similarity / Processing ---
