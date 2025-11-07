@@ -8,6 +8,7 @@ from io import BytesIO
 import pandas as pd
 import base64
 import subprocess
+import sys
 
 
 import tempfile
@@ -75,16 +76,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ----------------------------
-# NAVBAR
-# ----------------------------
-st.markdown("""
-<div class="navbar">
-    <a href="#">HOME</a>
-    <a href="#">CONTACT / SUPPORT</a>
-    <a href="#" class="login-btn">SECURE LOGIN</a>
-</div>
-""", unsafe_allow_html=True)
 
 # ----------------------------
 # HEADER SECTION (LOGO + TITLE)
@@ -139,7 +130,7 @@ st.markdown("""
 st.sidebar.title("📂 Configuration")
 page = st.sidebar.radio(
     "Select a view",
-    ["Forgery Detection", "Document Validation", "Doc Authenticity", "Duplicate Photo Finding","Blur Detection"]
+    ["Forgery Detection", "Doc Authenticity", "Duplicate Photo", "Blur Detection", "Document Validation"]
 )
 
 
@@ -152,7 +143,7 @@ st.sidebar.caption("AI Document Integrity Demo")
 def run_validator(input_dir, validator_script="azure_doc_validator.py"):
     output_path = Path(input_dir) / "document_validation_results.json"
     cmd = [
-        "python",
+        sys.executable,  # ensures Streamlit's Python env is used
         validator_script,
         "--input_dir", str(input_dir),
         "--output", str(output_path)
