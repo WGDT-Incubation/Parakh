@@ -3,12 +3,17 @@ pdfplumber
 PyMuPDF
 Pillow
 pytesseract
-opencv-python
-face-recognition
-numpy
-pandas
+opencv-python-headless
+numpy>=1.26.0
+pandas>=2.0.0
 fpdf2
 rapidfuzz
+pdf2image
+pathlib
+tqdm
+
+# --- Optional: Face recognition (comment out if Azure handles faces) ---
+# face-recognition     # requires dlib compilation; skip for Streamlit Cloud
 
 # --- NLP / Text Similarity / Processing ---
 spacy
@@ -26,8 +31,8 @@ azure-core
 
 # --- Utility / File Handling ---
 python-magic
-tqdm
 requests
+faiss-cpu          # correct package name for FAISS (not 'faiss')
 
 # --- For ML / Deep Learning (Optional but useful for enhancement) ---
 torch
