@@ -594,10 +594,10 @@ elif page == "Duplicate Photo Finding":
 
 
     st.write("""
-    Detect duplicate passport-size photos across uploaded PDFs or images.
+    Detect duplicate passport-size photos across uploaded PDFs or images. Relative Dir Paths -  moredocs/Duplicate/same photo-1 or same photo-2 or same photo-3 or same photo-4
     """)
 
-    dir_path = st.text_input("📂 Enter directory path containing PDFs or image files:")
+    dir_path = st.text_input("📂 Enter relative directory path containing PDFs or image files:")
 
     if dir_path and os.path.isdir(dir_path):
 
