@@ -11,7 +11,7 @@ rapidfuzz
 pdf2image
 pathlib
 tqdm
-dotenv
+python-dotenv
 
 # --- Face Detection & Analysis (InsightFace) ---
 insightface>=0.7.3
