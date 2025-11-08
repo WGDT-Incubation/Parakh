@@ -40,20 +40,6 @@ st.markdown("""
             font-family: 'Segoe UI', sans-serif;
             background-color: #f9fafc;
         }
-        .navbar {
-            text-align: right;
-            padding: 10px 60px 0px 0px;
-            font-size: 16px;
-        }
-        .navbar a {
-            text-decoration: none;
-            color: #0c2340;
-            margin-left: 20px;
-            font-weight: 500;
-        }
-        .navbar a:hover {
-            color: #4b61d1;
-        }
         .login-btn {
             background-color: #0c2340;
             color: white !important;
@@ -82,12 +68,9 @@ st.markdown("""
 # ----------------------------
  
 col1, col2, col3,col4,col5 = st.columns([1,1,2,1,1])
-with col3:
-    st.image("image/caglogo.png", width=100)
-
-
-col1, col2, col3 = st.columns([1,4,1])
 with col2:
+    st.image("image/caglogo.png", width=200)
+with col3:
     st.image("image/parakh.png", width=400)
 
 
@@ -113,11 +96,11 @@ st.markdown("""
     Upload a document (<b>PDF, DOCX, or Image</b>) and I’ll analyze its:
     </p>
             <p>
-            <ul style="font-size:16px; color:#222; line-height:1.7;">
-        <li><b>Structural Integrity</b> – layout consistency, missing pages, duplications</li>
-        <li><b>Semantic Coherence</b> – logical flow, contradictory content, incomplete sections</li>
-        <li><b>Authenticity Indicators</b> – repetitive signatures, overwritten text, metadata inconsistencies</li>
-    </ul>
+            <ul style="font-size:14px; color:#222; line-height:1.7;">
+                <li><b>Structural Integrity</b> – layout consistency, missing pages, duplications</li>
+                <li><b>Semantic Coherence</b> – logical flow, contradictory content, incomplete sections</li>
+                <li><b>Authenticity Indicators</b> – repetitive signatures, overwritten text, metadata inconsistencies</li>
+            </ul>
             </p>
     
 </div>
@@ -358,7 +341,7 @@ def cosine_similarity(a, b):
 # PAGE 1 - FORGERY DETECTION
 # ----------------------------
 if page == "Forgery Detection":
-    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+    
     #st.title("🕵️‍♂️ CAG PARAKH - Document Forgery Detection")
     #st.write("""
     #Upload a **PDF or image** to detect suspicious erasures or white-marker regions.
@@ -424,7 +407,7 @@ if page == "Forgery Detection":
 # ----------------------------
 
 elif page == "Document Validation":
-    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+    
     st.title("🔎 CAG PARAKH - Document Validation")
 
     # ----------------------------
@@ -500,7 +483,7 @@ elif page == "Document Validation":
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "Doc Authenticity":
-    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+    
     st.title("CAG PARAKH - Find Document Authenticity")
     st.write("""
     Upload a PDF / Image to detect if document is edited using any tool.
@@ -580,7 +563,7 @@ elif page == "Doc Authenticity":
             mime="image/png"
         )
 elif page == "Duplicate Photo Finding": 
-    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+    
     st.title("📸 CAG PARAKH - Duplicate Photo Finding")
 
 
@@ -667,7 +650,7 @@ elif page == "Duplicate Photo Finding":
 # PAGE 5 - BLUR DETECTION
 # ----------------------------
 elif page == "Blur Detection":
-    st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+    
     st.title("🔍 CAG PARAKH - Blur & Image Quality Detection")
     st.write("""
     Upload an **image** or a **PDF document** to analyze its clarity.
@@ -736,8 +719,7 @@ elif page == "Blur Detection":
 # ----------------------------
 # FOOTER
 # ----------------------------
-st.markdown("""
-<footer>
-    <strong>Powered by Wadhwani Foundation and Office of Principal Accountant General (Audit-I)</strong>
-</footer>
-""", unsafe_allow_html=True)
+st.markdown(
+    "<div style='text-align: center;'>Powered by Wadhwani Foundation and Office of Principal Accountant General (Audit-I)</div>",
+    unsafe_allow_html=True
+)
