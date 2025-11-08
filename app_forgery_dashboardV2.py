@@ -562,7 +562,7 @@ elif page == "Doc Authenticity":
             file_name="forgery_heatmap.png",
             mime="image/png"
         )
-elif page == "Duplicate Photo Finding": 
+elif page == "Duplicate Photo": 
     
     st.title("📸 CAG PARAKH - Duplicate Photo Finding")
 
