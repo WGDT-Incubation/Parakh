@@ -408,7 +408,7 @@ if page == "Forgery Detection":
 
 elif page == "Document Validation":
     
-    st.title("🔎 CAG PARAKH - Document Validation")
+    #st.title("🔎 CAG PARAKH - Document Validation")
 
     # ----------------------------
     # SESSION STATE SETUP
@@ -484,7 +484,7 @@ elif page == "Document Validation":
 
 elif page == "Doc Authenticity":
     
-    st.title("CAG PARAKH - Find Document Authenticity")
+    #st.title("CAG PARAKH - Find Document Authenticity")
     st.write("""
     Upload a PDF / Image to detect if document is edited using any tool.
     """)
@@ -564,7 +564,7 @@ elif page == "Doc Authenticity":
         )
 elif page == "Duplicate Photo": 
     
-    st.title("📸 CAG PARAKH - Duplicate Photo Finding")
+    #st.title("📸 CAG PARAKH - Duplicate Photo Finding")
 
 
     st.write("""
@@ -651,7 +651,7 @@ elif page == "Duplicate Photo":
 # ----------------------------
 elif page == "Blur Detection":
     
-    st.title("🔍 CAG PARAKH - Blur & Image Quality Detection")
+    #st.title("🔍 CAG PARAKH - Blur & Image Quality Detection")
     st.write("""
     Upload an **image** or a **PDF document** to analyze its clarity.
     This module detects if the content is too blurred or low-quality for auditing.
