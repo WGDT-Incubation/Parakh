@@ -124,7 +124,18 @@ st.markdown("""
             padding: 8px 0;
             border-top: 1px solid #ddd;
         }
+                /* --- Streamlit Default Padding Override --- */
+        .block-container {
+            padding-top: 0rem !important;       /* Remove top gap */
+            padding-bottom: 1rem !important;
+            margin-top: 45px !important;       /* Pull slightly upward */
+        }
 
+        /* --- Header Margin Tweak --- */
+        .header {
+            margin-top: 0px !important;         /* Remove extra top margin */
+            margin-bottom: 8px !important;
+        }
         /* --- Animations --- */
         @keyframes fadeIn {
             from {opacity: 0; transform: translateY(-10px);}
