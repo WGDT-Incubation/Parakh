@@ -32,79 +32,219 @@ st.set_page_config(
 )
 
 # ----------------------------
-# CUSTOM CSS
+# CUSTOM CSS - Enhanced UI 
 # ----------------------------
 st.markdown("""
     <style>
+        /* --- Base Layout --- */
         body {
             font-family: 'Segoe UI', sans-serif;
-            background-color: #f9fafc;
+            background: linear-gradient(135deg, #eef2f7 0%, #ffffff 100%);
+            overflow-x: hidden;
         }
-        .login-btn {
-            background-color: #0c2340;
-            color: white !important;
-            padding: 6px 16px;
-            border-radius: 8px;
+        .main {
+            padding-top: 0rem !important;
+            padding-bottom: 0rem !important;
         }
-        .upload-card {
-            background-color: white;
-            padding: 25px;
+
+        /* --- Header Logos --- */
+        .header {
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        .header img {
+            display: block;
+            margin: 0 auto;
+        }
+        .cag-logo {
+            max-width: 150px;
+            margin-bottom: 5px;
+            animation: fadeIn 1s ease-in-out;
+        }
+        .parakh-logo {
+            max-width: 360px;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+        .tagline {
+            font-size: 20px;
+            color: #0c2340;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- Intro Card --- */
+        .intro-card {
+            background: #ffffff;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 25px 40px;
+            width: 70%;
+            margin: 0 auto;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
+        .intro-card:hover {
+            transform: scale(1.01);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+        .intro-card h3 {
+            color: #0c2340;
+            margin-bottom: 10px;
+        }
+        .intro-card ul {
+            padding-left: 25px;
+            line-height: 1.7;
+            color: #333;
+        }
+
+        /* --- Uploader Section --- */
+        .upload-section {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 20px 35px;
+            width: 70%;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        /* --- Footer --- */
         footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f9fafc;
             text-align: center;
             font-size: 14px;
-            color: #555;
-            margin-top: 80px;
-            padding-bottom: 10px;
+            color: #444;
+            padding: 8px 0;
+            border-top: 1px solid #ddd;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(-10px);}
+            to {opacity: 1; transform: translateY(0);}
         }
     </style>
 """, unsafe_allow_html=True)
 
 
 # ----------------------------
-# HEADER SECTION (LOGO + TITLE)
+# HEADER SECTION (LOGO + TITLE) - updated
 # ----------------------------
- 
-col1, col2, col3,col4,col5 = st.columns([1,1,2,1,1])
-with col2:
-    st.image("image/caglogo.png", width=200)
-with col3:
-    st.image("image/parakh.png", width=400)
+import base64
 
+def get_base64_image(image_path):
+    with open(image_path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
 
+# Convert local logos to base64
+cag_logo_b64 = get_base64_image("image/caglogo.png")
+parakh_logo_b64 = get_base64_image("image/parakh.png")
+
+# --- HEADER HTML (Correctly Sized + Centered) ---
+st.markdown(f"""
+    <style>
+        .header {{
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 15px;
+        }}
+        .cag-logo {{
+            width: 100px;            /* 👈 fixed size */
+            height: auto;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            animation: fadeIn 1s ease-in-out;
+        }}
+        .parakh-logo {{
+            width: 360px;           /* 👈 proportional size */
+            height: auto;
+            animation: fadeIn 1.5s ease-in-out;
+        }}
+        .tagline {{
+            font-size: 20px;
+            color: #0c2340;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 6px;
+            margin-bottom: 25px;
+            letter-spacing: 0.6px;
+        }}
+        @keyframes fadeIn {{
+            from {{opacity: 0; transform: translateY(-10px);}}
+            to {{opacity: 1; transform: translateY(0);}}
+        }}
+    </style>
+
+    <div class="header">
+        <img src="data:image/png;base64,{cag_logo_b64}" class="cag-logo" alt="CAG Logo">
+        <br>
+        <img src="data:image/png;base64,{parakh_logo_b64}" class="parakh-logo" alt="Parakh Logo">
+    </div>
+""", unsafe_allow_html=True)
 
 # ----------------------------
-# INTRODUCTORY / FEATURE SECTION (TEXT IN SAME ALIGNMENT AS IMAGE)
+# INTRODUCTORY / FEATURE SECTION (TEXT IN SAME ALIGNMENT AS IMAGE) - Updated
 # ----------------------------
 st.markdown("""
-<div style="
-    background-color: #ffffff;
-    border-radius: 15px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    padding: 25px 40px;
-    margin-top: 10px;
-    margin-bottom: 25px;
-    width: 75%;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: left;
-    ">
-    <h3 style="color:#0c2340;">👋 Hello, Auditor!</h3>
-    <p style="font-size:16px; color:#333;">
-    Upload a document (<b>PDF, DOCX, or Image</b>) and I’ll analyze its:
+<style>
+    .intro-card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+        padding: 15px 25px;               /* ↓ Reduced padding */
+        width: 65%;                       /* ↓ Slightly narrower */
+        margin: 5px auto 10px auto;
+        text-align: left;
+        transition: box-shadow 0.2s ease;
+    }
+    .intro-card:hover {
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .intro-card h3 {
+        color: #0c2340;
+        font-size: 18px;                  /* ↓ Smaller heading */
+        margin-bottom: 4px;
+    }
+    .intro-card p {
+        font-size: 14px;                  /* ↓ Reduced body text */
+        color: #333;
+        margin-bottom: 6px;
+        line-height: 1.4;
+    }
+    .intro-card ul {
+        font-size: 13px;                  /* ↓ Compact list */
+        color: #222;
+        line-height: 1.4;
+        padding-left: 18px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+    }
+    .intro-card li {
+        margin-bottom: 3px;               /* ↓ Tight line spacing */
+    }
+</style>
+
+<div class="intro-card">
+    <h3>👋 Hello, Auditor!</h3>
+    <p>
+        Upload a document (<b>PDF, DOCX, or Image</b>) and I’ll analyze its:
     </p>
-            <p>
-            <ul style="font-size:14px; color:#222; line-height:1.7;">
-                <li><b>Structural Integrity</b> – layout consistency, missing pages, duplications</li>
-                <li><b>Semantic Coherence</b> – logical flow, contradictory content, incomplete sections</li>
-                <li><b>Authenticity Indicators</b> – repetitive signatures, overwritten text, metadata inconsistencies</li>
-            </ul>
-            </p>
-    
+    <ul>
+        <li><b>Structural Integrity</b> – layout consistency, missing pages, duplications</li>
+        <li><b>Semantic Coherence</b> – logical flow, contradictory or incomplete content</li>
+        <li><b>Authenticity Indicators</b> – repeated signatures, overwritten text, metadata mismatches</li>
+    </ul>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 # ----------------------------
