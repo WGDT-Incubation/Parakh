@@ -146,6 +146,56 @@ st.markdown("""
 
 
 # ----------------------------
+# Sidebar Width fixes
+# ----------------------------
+st.markdown("""
+    <style>
+        /* --- Stronger sidebar width rules --- */
+        section[data-testid="stSidebar"] {
+            width:280px !important;
+            min-width: 140x !important;
+            max-width: 400px !important;
+        }
+
+        /* inner complementary container used by Streamlit */
+        div[data-testid="stSidebar"] > div[role="complementary"] {
+            width: 440px !important;
+            min-width: 440px !important;
+        }
+
+        /* Prevent radio labels and other sidebar text from wrapping */
+        div[data-testid="stSidebar"] label,
+        div[data-testid="stSidebar"] .stRadio,
+        div[data-testid="stSidebar"] .stRadio * {
+            white-space: nowrap !important;
+        }
+
+        /* allow horizontal scrolling inside sidebar if content overflows */
+        div[data-testid="stSidebar"] {
+            overflow-x: auto;
+            font-size: 14px !important;
+        }
+
+        /* Move main content to the right so it doesn't get overlapped */
+        div[data-testid="stAppViewContainer"] > div:nth-child(1) > div.block-container {
+            margin-left: 460px !important;
+        }
+
+        /* Responsive fallback for smaller screens */
+        @media (max-width: 900px) {
+            section[data-testid="stSidebar"] {
+                width: 300px !important;
+                min-width: 300px !important;
+                max-width: 300px !important;
+            }
+            div[data-testid="stAppViewContainer"] > div:nth-child(1) > div.block-container {
+                margin-left: 320px !important;
+            }
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# ----------------------------
 # HEADER SECTION (LOGO + TITLE) - updated
 # ----------------------------
 import base64
