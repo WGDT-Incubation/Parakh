@@ -264,7 +264,7 @@ st.markdown("""
 st.sidebar.title("📂 Configuration")
 page = st.sidebar.radio(
     "Select a view",
-    ["Forgery Detection", "Duplicate Photo", "Blur Detection", "Semantic Test Module"]
+    ["Structural Integrity Module", "Duplicate Photo", "Blur Detection", "Semantic Test Module"]
 )
 
 
@@ -489,11 +489,11 @@ def cosine_similarity(a, b):
 
 
 # ----------------------------
-# PAGE 1 - FORGERY DETECTION
+# PAGE 1 - Structural Integrity Module, earlier this was forgery detetcion 
 # ----------------------------
-if page == "Forgery Detection":
+if page == "Structural Integrity Module":
     
-    #st.title("🕵️‍♂️ CAG PARAKH - Document Forgery Detection")
+    #st.title("🕵️‍♂️ CAG PARAKH - Document Structural Integrity Module")
     #st.write("""
     #Upload a **PDF or image** to detect suspicious erasures or white-marker regions.
     #Red boxes highlight potential tampered zones.
