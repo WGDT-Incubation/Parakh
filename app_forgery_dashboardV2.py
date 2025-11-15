@@ -264,7 +264,7 @@ st.markdown("""
 st.sidebar.title("📂 Configuration")
 page = st.sidebar.radio(
     "Select a view",
-    ["Clarity Integrity Module", "Structural Integrity Module", "Duplicate Photo",  "Semantic Test Module"]
+    ["Clarity Integrity Module", "Structural Integrity Module", "Image Duplication Module",  "Semantic Test Module"]
 )
 
 
@@ -713,7 +713,7 @@ elif page == "Doc Authenticity":
             file_name="forgery_heatmap.png",
             mime="image/png"
         )
-elif page == "Duplicate Photo": 
+elif page == "Image Duplication Module": 
     
     #st.title("📸 CAG PARAKH - Duplicate Photo Finding")
 
@@ -733,7 +733,7 @@ elif page == "Duplicate Photo":
             st.warning("No PDF or image files found in this folder.")
         else:
             st.success(f"Found {len(files)} documents.")
-            start_btn = st.button("🚀 Start Duplicate Photo Detection")
+            start_btn = st.button("🚀 Start Duplicate Image Detection")
 
             if start_btn:
                 st.info("Detecting ... please wait.")
@@ -778,9 +778,9 @@ elif page == "Duplicate Photo":
                                 pairs.append((i, I[i, j], sim))
 
                     if len(pairs) == 0:
-                        st.info("✅ No duplicate photos found.")
+                        st.info("✅ No duplicate Image found.")
                     else:
-                        st.success(f"Found {len(pairs)} duplicate photo pairs:")
+                        st.success(f"Found {len(pairs)} duplicate Image pairs:")
                         for idx, (i1, i2, sim) in enumerate(pairs, 1):
                             col1, col2, col3 = st.columns([1, 1, 1])
                             with col1:
