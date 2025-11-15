@@ -264,7 +264,7 @@ st.markdown("""
 st.sidebar.title("📂 Configuration")
 page = st.sidebar.radio(
     "Select a view",
-    ["Structural Integrity Module", "Duplicate Photo", "Blur Detection", "Semantic Test Module"]
+    ["Clarity Integrity Module", "Structural Integrity Module", "Duplicate Photo",  "Semantic Test Module"]
 )
 
 
@@ -798,9 +798,9 @@ elif page == "Duplicate Photo":
     else:
         st.warning("Please enter a valid folder path to start.")    
 # ----------------------------
-# PAGE 5 - BLUR DETECTION
+# PAGE 5 - Clarity Integrity Module
 # ----------------------------
-elif page == "Blur Detection":
+elif page == "Clarity Integrity Module":
     
     #st.title("🔍 CAG PARAKH - Blur & Image Quality Detection")
     st.write("""
