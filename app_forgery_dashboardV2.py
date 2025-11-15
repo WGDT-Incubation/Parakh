@@ -264,7 +264,7 @@ st.markdown("""
 st.sidebar.title("📂 Configuration")
 page = st.sidebar.radio(
     "Select a view",
-    ["Forgery Detection", "Doc Authenticity", "Duplicate Photo", "Blur Detection", "Document Validation"]
+    ["Forgery Detection", "Duplicate Photo", "Blur Detection", "Semantic Test Module"]
 )
 
 
@@ -554,12 +554,12 @@ if page == "Forgery Detection":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ----------------------------
-# PAGE 2 - DOCUMENT VALIDATION
+# PAGE 2 - Semantic Test Module, It was Document Validation Earlier
 # ----------------------------
 
-elif page == "Document Validation":
+elif page == "Semantic Test Module":
     
-    #st.title("🔎 CAG PARAKH - Document Validation")
+    #st.title("🔎 CAG PARAKH - Semantic Test Module")
 
     # ----------------------------
     # SESSION STATE SETUP
@@ -613,7 +613,7 @@ elif page == "Document Validation":
         input_dir = st.session_state.input_dir
 
         st.dataframe(df, use_container_width=True, hide_index=True)
-        st.write(f"**Summary:** ✅ {(df['Status'].str.contains('PASS')).sum()} PASS | ❌ {(df['Status'].str.contains('FAIL')).sum()} FAIL (out of {len(df)})")
+        st.write(f"**Summary:** ✅ {(df['Status'].str.contains('PASS')).sum()} PASS for Sematic Test | ❌ {(df['Status'].str.contains('FAIL')).sum()} FAIL for Sematic Test (out of {len(df)})")
         st.markdown("---")
 
         # ----------------------------
@@ -839,7 +839,7 @@ elif page == "Blur Detection":
                                  caption="Blurred Regions Highlighted", use_container_width=True)
 
                     if is_blurred:
-                        st.error(f"🚫 Page appears **blurred** (sharpness={round(variance,2)}) — Please upload a clearer version.")
+                        st.error(f"🚫 Application invalid as uploaded document is illegible.")
                     else:
                         st.success(f"✅ Page is **clear** and suitable for analysis. Sharpness={round(variance,2)}")
                     st.markdown("---")
